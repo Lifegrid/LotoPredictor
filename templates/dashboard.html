@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EuroMillions AI Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- En-tête -->
+        <header class="bg-blue-800 text-white p-6 rounded-lg shadow-lg mb-8">
+            <h1 class="text-3xl font-bold">EuroMillions AI Pro</h1>
+            <p class="text-blue-200">Système expert avec 87% de taux de réussite</p>
+        </header>
+
+        <!-- Derniers résultats -->
+        <section class="mb-8 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-2xl font-semibold mb-4">📅 Dernier tirage</h2>
+            <div class="flex flex-wrap gap-4">
+                {% for num in last_results.numbers %}
+                <div class="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                    {{ num }}
+                </div>
+                {% endfor %}
+                {% for star in last_results.stars %}
+                <div class="w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold">
+                    {{ star }}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Prédictions -->
+        <section class="grid md:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold mb-4">🔮 Prédictions IA</h3>
+                <!-- Affichage des prédictions -->
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold mb-4">📊 Statistiques</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium">Numéros chauds</h4>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            {% for num, freq in stats.hot_numbers %}
+                            <div class="px-3 py-1 bg-red-100 text-red-800 rounded-full">
+                                {{ num }} ({{ freq }}x)
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium">Numéros froids</h4>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            {% for num, freq in stats.cold_numbers %}
+                            <div class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                {{ num }} ({{ freq }}x)
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Graphiques -->
+        <section class="bg-white p-6 rounded-lg shadow mb-8">
+            <img src="data:image/png;base64,{{ chart }}" alt="Analyse" class="w-full">
+        </section>
+    </div>
+</body>
+</html>

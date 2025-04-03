@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EuroMillions Predictor Pro</title>
+    <style>
+        /* ... (votre CSS) ... */
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #34495e;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 8px;
+            margin-top: 25px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .prediction {
+            padding: 20px;
+            border-radius: 8px;
+            background: var(--light);
+            margin-bottom: 15px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+        }
+        .prediction.win {
+            border-left-color: var(--success);
+            background: linear-gradient(90deg, rgba(39, 174, 96, 0.1) 0%, rgba(255,255,255,1) 50%);
+        }
+        .numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .number {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+        .boule {
+            background: var(--secondary);
+            color: white;
+        }
+        .etoile {
+            background: var(--warning);
+            color: white;
+        }
+        .gain-info {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .gain-info.win {
+            color: var(--success);
+        }
+        .btn {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .text-center {
+            text-align: center;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin: 10px 0;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s;
+        }
+        .history-item:hover {
+            background: var(--light);
+        }
+        .alert {
+            background: #fff3cd;
+            color: #856404;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid #ffeeba;
+        }
+        .draw-date {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .no-results {
+            color: var(--danger);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>EuroMillions Predictor Pro</h1>
+            <p>Système expert de prédiction des tirages</p>
+        </div>
+    </header>
+
+    <div class="container">
+        {% if request.args.get('no_draw') %}
+        <div class="alert">
+            <h3>⏳ Prochain tirage : {{ next_draw }}</h3>
+            <p>Les prédictions ne sont disponibles que les jours de tirage (mardi et vendredi)</p>
+        </div>
+        {% endif %}
+
+        <div class="stats">
+            <div class="stat">
+                <div>Total Prédictions</div>
+                <div class="stat-value">{{ stats.total|default(0) }}</div>
+            </div>
+            <div class="stat">
+                <div>Gagnantes</div>
+                <div class="stat-value">{{ stats.wins|default(0) }}</div>
+            </div>
+            <div class="stat">
+                <div>Meilleur Gain</div>
+                <div class="stat-value">
+                    {% if stats.best and stats.best.analysis and stats.best.analysis.category %}
+                        {{ stats.best.analysis.category.split()[0] }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if last_results %}
+        <div class="card">
+            <h2>📅 Derniers résultats officiels</h2>
+            <div class="draw-date">{{ last_results.date }}</div>
+
+            {% if last_results.boules %}
+            <div>
+                <strong>Boules :</strong>
+                <div class="numbers">
+                    {% for num in last_results.boules %}
+                    <div class="number boule">{{ num }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <strong>Étoiles :</strong>
+                <div class="numbers">
+                    {% for num in last_results.etoiles %}
+                    <div class="number etoile">{{ num }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <p class="no-results">Aucun résultat disponible pour ce tirage</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="grid-container">
+            <div class="card">
+                <h2>🧠 Prédictions LSTM</h2>
+                {% for grid in lstm_grids %}
+                <div class="prediction {% if grid.category != 'Pas de gain' %}win{% endif %}">
+                    <div>
+                        <strong>Boules :</strong>
+                        <div class="numbers">
+                            {% for num in grid.boules %}
+                            <div class="number boule">{{ num }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <strong>Étoiles :</strong>
+                        <div class="numbers">
+                            {% for num in grid.etoiles %}
+                            <div class="number etoile">{{ num }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="gain-info {% if grid.category != 'Pas de gain' %}win{% endif %}">
+                        {{ grid.match }} → {{ grid.category }} {{ grid.prize }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="card">
+                <h2>🧬 Prédictions Génétiques</h2>
+                {% for grid in genetic_grids %}
+                <div class="prediction {% if grid.category != 'Pas de gain' %}win{% endif %}">
+                    <div>
+                        <strong>Boules :</strong>
+                        <div class="numbers">
+                            {% for num in grid.boules %}
+                            <div class="number boule">{{ num }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <strong>Étoiles :</strong>
+                        <div class="numbers">
+                            {% for num in grid.etoiles %}
+                            <div class="number etoile">{{ num }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="gain-info {% if grid.category != 'Pas de gain' %}win{% endif %}">
+                        {{ grid.match }} → {{ grid.category }} {{ grid.prize }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2 class="text-center">📊 Analyse des Fréquences</h2>
+            <img src="data:image/png;base64,{{ plot_url }}" alt="Graphique des fréquences" style="width:100%; max-width:800px; display:block; margin:0 auto;">
+        </div>
+
+        <div class="text-center">
+            <form action="{{ url_for('generate_predictions') }}" method="post">
+                <button type="submit" class="btn">🎰 Générer de nouvelles prédictions</button>
+            </form>
+        </div>
+
+        {% if history %}
+        <div class="card">
+            <h2>🕰️ Historique récent</h2>
+            {% for item in history %}
+            <div class="history-item">
+                <div><strong>{{ item.date }}</strong></div>
+                <div style="margin:10px 0;">
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        {% if item.last_results and item.last_results.boules %}
+                        <div>
+                            <div>Résultat :</div>
+                            <div class="numbers">
+                                {% for num in item.last_results.boules %}
+                                <div class="number boule">{{ num }}</div>
+                                {% endfor %}
+                                {% for num in item.last_results.etoiles %}
+                                <div class="number etoile">{{ num }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <div>Prédiction :</div>
+                            <div class="numbers">
+                                {% for num in item.prediction.boules %}
+                                <div class="number boule">{{ num }}</div>
+                                {% endfor %}
+                                {% for num in item.prediction.etoiles %}
+                                <div class="number etoile">{{ num }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if item.gain %}
+                <div class="gain-info {% if item.gain.category != 'Pas de gain' %}win{% endif %}">
+                    {{ item.gain.match }} → <strong>{{ item.gain.category }}</strong> {{ item.gain.prize }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

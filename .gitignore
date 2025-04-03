@@ -1,0 +1,32 @@
+*.gsheet
+# Environnement virtuel
+lotoenv/
+lotoenv310/
+
+# Fichiers temporaires
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+*.nbconvert.*
+
+# Modèles lourds / data
+*.h5
+*.keras
+*.pkl
+data/predictions.json
+
+# JupyterLab / static
+**/share/jupyter/
+**/static/
+**/site-packages/
+
+# Autres
+.env
+.DS_Store
+*.gsheet

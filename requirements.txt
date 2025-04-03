@@ -1,0 +1,10 @@
+Flask
+tensorflow
+pandas
+numpy
+matplotlib
+requests
+beautifulsoup4
+scikit-learn
+joblib
+deap

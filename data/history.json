@@ -1,0 +1,137 @@
+[
+  {
+    "date": "2025-04-01 12:32",
+    "prediction": {
+      "boules": [
+        6,
+        15,
+        31,
+        37,
+        41
+      ],
+      "etoiles": [
+        1,
+        9
+      ],
+      "type": "G\u00e9n\u00e9tique"
+    },
+    "results": {
+      "boules": [],
+      "etoiles": [],
+      "date": "Inconnue"
+    },
+    "analysis": {
+      "match": "0 boules + 0 \u00e9toiles",
+      "category": "Pas de gain",
+      "prize": ""
+    }
+  },
+  {
+    "date": "2025-04-01 12:32",
+    "prediction": {
+      "boules": [
+        9,
+        37,
+        40,
+        41,
+        46
+      ],
+      "etoiles": [
+        1,
+        2
+      ],
+      "type": "G\u00e9n\u00e9tique"
+    },
+    "results": {
+      "boules": [],
+      "etoiles": [],
+      "date": "Inconnue"
+    },
+    "analysis": {
+      "match": "0 boules + 0 \u00e9toiles",
+      "category": "Pas de gain",
+      "prize": ""
+    }
+  },
+  {
+    "date": "2025-04-01 12:32",
+    "prediction": {
+      "boules": [
+        1,
+        3,
+        24,
+        30,
+        36
+      ],
+      "etoiles": [
+        10,
+        12
+      ],
+      "type": "G\u00e9n\u00e9tique"
+    },
+    "results": {
+      "boules": [],
+      "etoiles": [],
+      "date": "Inconnue"
+    },
+    "analysis": {
+      "match": "0 boules + 0 \u00e9toiles",
+      "category": "Pas de gain",
+      "prize": ""
+    }
+  },
+  {
+    "date": "2025-04-01 12:32",
+    "prediction": {
+      "boules": [
+        14,
+        18,
+        27,
+        32,
+        44
+      ],
+      "etoiles": [
+        1,
+        12
+      ],
+      "type": "G\u00e9n\u00e9tique"
+    },
+    "results": {
+      "boules": [],
+      "etoiles": [],
+      "date": "Inconnue"
+    },
+    "analysis": {
+      "match": "0 boules + 0 \u00e9toiles",
+      "category": "Pas de gain",
+      "prize": ""
+    }
+  },
+  {
+    "date": "2025-04-01 12:32",
+    "prediction": {
+      "boules": [
+        13,
+        29,
+        40,
+        43,
+        44
+      ],
+      "etoiles": [
+        5,
+        9
+      ],
+      "type": "G\u00e9n\u00e9tique"
+    },
+    "results": {
+      "boules": [],
+      "etoiles": [],
+      "date": "Inconnue"
+    },
+    "analysis": {
+      "match": "0 boules + 0 \u00e9toiles",
+      "category": "Pas de gain",
+      "prize": ""
+    }
+  }
+]

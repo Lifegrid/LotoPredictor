@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prédictions EuroMillions - IA</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+    .container {
+      max-width: 960px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    .section {
+      margin-top: 2rem;
+    }
+    .btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    .tag {
+      background-color: #eee;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔮 Résultats IA EuroMillions</h1>
+
+    <div class="section">
+      <h2>Grille LSTM</h2>
+      <table>
+        <thead><tr><th colspan="5">Boules</th><th colspan="2">Étoiles</th></tr></thead>
+        <tbody id="lstm"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Grille Fréquentielle</h2>
+      <table>
+        <thead><tr><th colspan="5">Boules</th><th colspan="2">Étoiles</th></tr></thead>
+        <tbody id="frequentielle"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Grilles Génétique Optimisées</h2>
+      <table>
+        <thead><tr><th>#</th><th colspan="5">Boules</th><th colspan="2">Étoiles</th></tr></thead>
+        <tbody id="genetique"></tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center;">
+      <button class="btn" onclick="telechargerCSV()">📥 Télécharger CSV</button>
+      <button class="btn" onclick="location.reload()">🔁 Recharger</button>
+    </div>
+  </div>
+
+  <script>
+    // Exemple de données (à remplacer dynamiquement en Python)
+    const resultats = {
+      lstm: [[18, 22, 23, 37, 40], [5, 6]],
+      freq: [[10, 19, 23, 42, 44], [2, 8]],
+      genetique: [
+        [[10, 13, 19, 23, 44], [2, 8]],
+        [[10, 13, 19, 23, 27], [2, 8]],
+        [[10, 19, 23, 27, 44], [2, 10]],
+        [[7, 10, 19, 23, 27], [2, 8]],
+        [[7, 10, 23, 27, 34], [2, 8]]
+      ]
+    };
+
+    function displayGrille(id, data) {
+      const tr = document.createElement("tr");
+      [...data[0], ...data[1]].forEach(n => {
+        const td = document.createElement("td");
+        td.textContent = n;
+        tr.appendChild(td);
+      });
+      document.getElementById(id).appendChild(tr);
+    }
+
+    function displayAll() {
+      displayGrille("lstm", resultats.lstm);
+      displayGrille("frequentielle", resultats.freq);
+
+      resultats.genetique.forEach((grille, i) => {
+        const tr = document.createElement("tr");
+        const index = document.createElement("td");
+        index.textContent = i + 1;
+        tr.appendChild(index);
+        [...grille[0], ...grille[1]].forEach(n => {
+          const td = document.createElement("td");
+          td.textContent = n;
+          tr.appendChild(td);
+        });
+        document.getElementById("genetique").appendChild(tr);
+      });
+    }
+
+    function telechargerCSV() {
+      let csv = "type,boule_1,boule_2,boule_3,boule_4,boule_5,etoile_1,etoile_2\n";
+      csv += `LSTM,${resultats.lstm[0].join(',')},${resultats.lstm[1].join(',')}\n`;
+      csv += `Frequentielle,${resultats.freq[0].join(',')},${resultats.freq[1].join(',')}\n`;
+      resultats.genetique.forEach((g, i) => {
+        csv += `Genetique_${i+1},${g[0].join(',')},${g[1].join(',')}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "predictions_euromillions.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    displayAll();
+  </script>
+</body>
+</html>

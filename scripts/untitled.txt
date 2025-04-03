@@ -1,0 +1,24 @@
+import pandas as pd
+import chardet
+
+file_paths = [
+    "euromillions_2.csv",
+    "euromillions_3.csv",
+    "euromillions_4.csv",
+    "euromillions_202002.csv",
+    "euromillions_201902.csv"
+]
+
+def detect_encoding(filepath):
+    with open(filepath, 'rb') as f:
+        result = chardet.detect(f.read())
+        return result['encoding']
+
+# Analyse colonne par colonne
+for path in file_paths:
+    try:
+        encoding = detect_encoding(path)
+        df = pd.read_csv(path, encoding=encoding, sep=";")
+        print(f"\n📄 {path} contient les colonnes suivantes :\n{df.columns.tolist()}")
+    except Exception as e:
+        print(f"❌ Erreur avec {path} : {e}")
