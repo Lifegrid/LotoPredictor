@@ -76,3 +76,20 @@ class FDJScraper:
             "boules": sorted(random.sample(range(1, 51), 5)),
             "etoiles": sorted(random.sample(range(1, 13), 2))
         } for i in range(count, 0, -1)]
+
+    @staticmethod
+    def get_next_draw_date() -> Optional[datetime]:
+        """Récupère la date du prochain tirage (si visible sur le site)."""
+        url = "https://www.fdj.fr/jeux-de-tirage/euromillions-my-million/resultats"
+        try:
+            soup = FDJScraper._make_request(url)
+            if not soup:
+                return None
+
+            tag = soup.find("p", string=lambda x: x and "Prochain tirage" in x)
+            if tag:
+                raw = tag.text.split(":", 1)[-1].strip().replace("à", "").strip()
+                return datetime.strptime(raw, "%A %d %B %Y %Hh%M")
+        except Exception as e:
+            logger.warning(f"[FDJScraper] Erreur récupération prochaine date : {e}")
+        return None
