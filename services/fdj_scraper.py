@@ -1,95 +1,61 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
-import random
-from typing import List, Dict, Optional
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FDJScraper:
+    BASE_URL = "https://tirage-gagnant.com/euromillions/"
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
-    BASE_URL = "https://www.fdj.fr/jeux-de-tirage/euromillions/resultats"
 
     @staticmethod
-    def _make_request(url: str) -> Optional[BeautifulSoup]:
+    def get_last_draw_results():
         try:
-            response = requests.get(url, headers=FDJScraper.HEADERS, timeout=30)
+            response = requests.get(FDJScraper.BASE_URL, headers=FDJScraper.HEADERS, timeout=20)
             response.raise_for_status()
-            return BeautifulSoup(response.content, "html.parser")
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            date_text = soup.select_one(".tirage-date").text.strip()
+            date_obj = datetime.strptime(date_text, "%d/%m/%Y")
+
+            numbers = [int(span.text.strip()) for span in soup.select(".numeros .boule")[:5]]
+            stars = [int(span.text.strip()) for span in soup.select(".etoiles .etoile")[:2]]
+
+            return {
+                "date": date_obj.strftime("%Y-%m-%d"),
+                "boules": sorted(numbers),
+                "etoiles": sorted(stars)
+            }
+
         except Exception as e:
-            logger.error(f"Erreur requête HTTP: {str(e)}")
+            logger.error(f"Erreur récupération résultats Euromillions : {e}")
             return None
 
     @staticmethod
-    def _validate_result(result: Dict) -> bool:
-        return (isinstance(result, dict) and
-                'date' in result and
-                'boules' in result and len(result['boules']) == 5 and
-                all(1 <= n <= 50 for n in result['boules']) and
-                'etoiles' in result and len(result['etoiles']) == 2 and
-                all(1 <= n <= 12 for n in result['etoiles']))
-
-    @staticmethod
-    def get_complete_history() -> List[Dict]:
-        """Récupère l'historique complet des tirages."""
-        history = FDJScraper._get_all_results()
-        if history:
-            return history
-        else:
-            logger.warning("Aucun historique récupéré, génération d'historique fictif.")
-            return FDJScraper._generate_fake_history(50)
-
-    @staticmethod
-    def _get_all_results() -> List[Dict]:
-        """Récupère l'historique complet des résultats depuis le site FDJ"""
-        results = []
-        page = 1
-        while True:
-            soup = FDJScraper._make_request(f"{FDJScraper.BASE_URL}/page-{page}")
-            if not soup:
-                break
-            results_items = soup.find_all("div", class_="tirage-item")
-            if not results_items:
-                break
-            for item in results_items:
-                date_str = item.select_one(".tirage-date").text.strip()
-                date_obj = datetime.strptime(date_str, '%d/%m/%Y')
-                boules = [int(x.text) for x in item.select(".ball")[:5]]
-                etoiles = [int(x.text) for x in item.select(".star-ball")[:2]]
-                results.append({
-                    "date": date_obj.strftime('%Y-%m-%d'),
-                    "boules": sorted(boules),
-                    "etoiles": sorted(etoiles)
-                })
-            page += 1
-        return results
-
-    @staticmethod
-    def _generate_fake_history(count: int = 50) -> List[Dict]:
-        """Génère un historique fictif pour les tests."""
-        return [{
-            "date": (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d'),
-            "boules": sorted(random.sample(range(1, 51), 5)),
-            "etoiles": sorted(random.sample(range(1, 13), 2))
-        } for i in range(count, 0, -1)]
-
-    @staticmethod
-    def get_next_draw_date() -> Optional[datetime]:
-        """Récupère la date du prochain tirage (si visible sur le site)."""
-        url = "https://www.fdj.fr/jeux-de-tirage/euromillions-my-million/resultats"
+    def get_next_draw_date():
         try:
-            soup = FDJScraper._make_request(url)
-            if not soup:
-                return None
+            # Prochain tirage : mardi ou vendredi à 21h10
+            today = datetime.today()
+            weekday = today.weekday()
+            
+            if weekday < 1 or weekday == 3:
+                days_until_next = 1 - weekday if weekday < 1 else 4 - weekday
+            else:
+                days_until_next = 7 - weekday + 1
 
-            tag = soup.find("p", string=lambda x: x and "Prochain tirage" in x)
-            if tag:
-                raw = tag.text.split(":", 1)[-1].strip().replace("à", "").strip()
-                return datetime.strptime(raw, "%A %d %B %Y %Hh%M")
+            next_draw = today.replace(hour=21, minute=10, second=0, microsecond=0) + timedelta(days=days_until_next)
+            return next_draw
+
         except Exception as e:
-            logger.warning(f"[FDJScraper] Erreur récupération prochaine date : {e}")
-        return None
+            logger.error(f"Erreur calcul prochaine date de tirage : {e}")
+            return datetime.today()
+
+    @staticmethod
+    def get_complete_history():
+        logger.warning("Récupération historique complet non encore implémentée dans cette version.")
+        return []
