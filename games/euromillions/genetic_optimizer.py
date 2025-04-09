@@ -1,59 +1,69 @@
 import random
-from collections import Counter
-from deap import base, creator, tools, algorithms
-from games.euromillions.data_loader import load_training_data
+import logging
+import pandas as pd  # 🔧 Manquait ici !
+from games.euromillions.data_loader import load_data
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class GeneticOptimizer:
-    def __init__(self):
-        self.pop_size = 150
-        self.ngen = 50
-        self.cxpb = 0.7
-        self.mutpb = 0.3
-        self._setup()
-
-    def _setup(self):
-        if not hasattr(creator, "FitnessMax"):
-            creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-        if not hasattr(creator, "Individual"):
-            creator.create("Individual", list, fitness=creator.FitnessMax)
-
-        self.toolbox = base.Toolbox()
-        self.toolbox.register("attr_int", random.randint, 1, 50)
-        self.toolbox.register("individual", tools.initRepeat,
-                              creator.Individual, self.toolbox.attr_int, n=5)
-        self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
-        self.toolbox.register("mate", tools.cxTwoPoint)
-        self.toolbox.register("mutate", tools.mutUniformInt, low=1, up=50, indpb=0.2)
-        self.toolbox.register("select", tools.selTournament, tournsize=3)
-
-    def evaluate(self, individual, frequency_map):
-        return (sum(frequency_map.get(num, 0) for num in individual),)
+    def __init__(self, population_size=100, generations=30):
+        self.population_size = population_size
+        self.generations = generations
 
     def generate_optimized_grid(self, history=None):
-        history = history or load_training_data()
-        all_numbers = [n for draw in history for n in draw['boules']]
-        if not all_numbers:
-            return self.generate_random()
+        try:
+            data = load_data()
+            if data.empty:
+                logger.warning("Aucune donnée disponible pour l'optimisation.")
+                return self._generate_random_grid()
 
-        freq_map = Counter(all_numbers)
-        self.toolbox.register("evaluate", lambda ind: self.evaluate(ind, freq_map))
+            past_draws = data[["boule_1", "boule_2", "boule_3", "boule_4", "boule_5", "etoile_1", "etoile_2"]].tail(30)
+            past_draws = past_draws.to_dict('records')
+            past_draws = [
+                {
+                    "boules": [d["boule_1"], d["boule_2"], d["boule_3"], d["boule_4"], d["boule_5"]],
+                    "etoiles": [d["etoile_1"], d["etoile_2"]]
+                } for d in past_draws if all(pd.notna(d[k]) for k in ["boule_1", "etoile_1"])
+            ]
 
-        pop = self.toolbox.population(n=self.pop_size)
-        algorithms.eaSimple(pop, self.toolbox, self.cxpb, self.mutpb, self.ngen, verbose=False)
-        best = tools.selBest(pop, k=1)[0]
+            if not past_draws:
+                return self._generate_random_grid()
 
-        unique = list(set(best))
-        while len(unique) < 5:
-            n = random.randint(1, 50)
-            if n not in unique:
-                unique.append(n)
+            population = [self._generate_random_grid() for _ in range(self.population_size)]
 
-        return {
-            "boules": sorted(unique[:5]),
-            "etoiles": sorted(random.sample(range(1, 13), 2))
-        }
+            def fitness(candidate, draws):
+                score = 0
+                for draw in draws:
+                    score -= len(set(candidate["boules"]) & set(draw["boules"]))
+                    score -= len(set(candidate["etoiles"]) & set(draw["etoiles"]))
+                return score
 
-    def generate_random(self):
+            for _ in range(self.generations):
+                population = sorted(population, key=lambda x: fitness(x, past_draws))
+                survivors = population[:self.population_size // 2]
+                children = []
+
+                while len(children) < self.population_size // 2:
+                    p1, p2 = random.sample(survivors, 2)
+                    child_boules = sorted(random.sample(list(set(p1["boules"] + p2["boules"])), 5))
+                    child_etoiles = sorted(random.sample(list(set(p1["etoiles"] + p2["etoiles"])), 2))
+                    children.append({"boules": child_boules, "etoiles": child_etoiles})
+
+                population = survivors + children
+
+            best = min(population, key=lambda x: fitness(x, past_draws))
+            return {
+                "date": None,
+                "boules": best["boules"],
+                "etoiles": best["etoiles"]
+            }
+
+        except Exception as e:
+            logger.error(f"Erreur Optimiseur Génétique : {e}")
+            return self._generate_random_grid()
+
+    def _generate_random_grid(self):
         return {
             "boules": sorted(random.sample(range(1, 51), 5)),
             "etoiles": sorted(random.sample(range(1, 13), 2))

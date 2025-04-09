@@ -3,292 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EuroMillions Predictor Pro</title>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #34495e;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--dark);
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
-            color: white;
-            padding: 30px 0;
-            text-align: center;
-            margin-bottom: 30px;
-            border-radius: 0 0 15px 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1 {
-            margin: 0;
-            font-size: 2.5rem;
-        }
-        h2 {
-            color: var(--primary);
-            border-bottom: 2px solid var(--secondary);
-            padding-bottom: 8px;
-            margin-top: 25px;
-        }
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        @media (max-width: 768px) {
-            .grid-container {
-                grid-template-columns: 1fr;
-            }
-        }
-        .prediction {
-            padding: 20px;
-            border-radius: 8px;
-            background: var(--light);
-            margin-bottom: 15px;
-            border-left: 4px solid transparent;
-        }
-        .prediction.win {
-            border-left-color: var(--success);
-            background: linear-gradient(90deg, rgba(39, 174, 96, 0.1) 0%, rgba(255,255,255,1) 50%);
-        }
-        .numbers {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 15px 0;
-        }
-        .number {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-weight: bold;
-        }
-        .boule {
-            background: var(--secondary);
-            color: white;
-        }
-        .etoile {
-            background: var(--warning);
-            color: white;
-        }
-        .gain-info {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .gain-info.win {
-            color: var(--success);
-        }
-        .btn {
-            background: var(--secondary);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .text-center {
-            text-align: center;
-        }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .stat {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--secondary);
-            margin: 10px 0;
-        }
-        .chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        .history-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        .alert {
-            background: #fff3cd;
-            color: #856404;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-left: 5px solid #ffeeba;
-        }
-    </style>
+    <title>EuroMillions Predictor Pro | Prédictions IA pour l'EuroMillions</title>
+    <meta name="description" content="Augmentez vos chances de gagner à l'EuroMillions avec nos prédictions basées sur l'IA et l'analyse statistique.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>EuroMillions Predictor Pro</h1>
-            <p>Système expert de prédiction des tirages</p>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                Euro<span>Predictor</span> <span class="premium-badge">PRO</span>
+            </div>
+            <nav>
+                <a href="/"><i class="fas fa-home"></i> Accueil</a>
+                <a href="/stats"><i class="fas fa-chart-bar"></i> Statistiques</a>
+                <a href="/compare"><i class="fas fa-exchange-alt"></i> Comparer</a>
+                <a href="/premium" class="btn-premium"><i class="fas fa-crown"></i> Premium</a>
+            </nav>
         </div>
     </header>
 
-    <div class="container">
-        <div class="stats">
-            <div class="stat">
-                <div>Total Prédictions</div>
-                <div class="stat-value">{{ stats.total|default(0) }}</div>
-            </div>
-            <div class="stat">
-                <div>Gagnantes</div>
-                <div class="stat-value">{{ stats.wins|default(0) }}</div>
-            </div>
-            <div class="stat">
-                <div>Meilleur Gain</div>
-                <div class="stat-value">
-                    {% if stats.best and stats.best.analysis and stats.best.analysis.category %}
-                        {{ stats.best.analysis.category.split()[0] }}
-                    {% else %}-{% endif %}
-                </div>
-            </div>
-        </div>
+    <main class="container">
+        <h1>EuroMillions Predictor Pro</h1>
+        <p class="subtitle">Utilisez la puissance de l'IA pour augmenter vos chances de gagner</p>
 
         {% if last_results %}
-        <div class="card">
-            <h2>📅 Derniers résultats officiels</h2>
-            <div class="draw-date">{{ last_results.date }}</div>
-            <div><strong>Boules :</strong>
-                <div class="numbers">
-                    {% for num in last_results.boules %}
-                    <div class="number boule">{{ num }}</div>
-                    {% endfor %}
-                </div>
+        <section class="last-draw animated">
+            <h2><i class="fas fa-trophy"></i> Derniers résultats</h2>
+            <p>Date : {{ last_results.date }}</p>
+            <div class="balls">
+                {% for number in last_results.boules %}
+                    <span class="ball">{{ number }}</span>
+                {% endfor %}
+                {% for star in last_results.etoiles %}
+                    <span class="star">{{ star }}</span>
+                {% endfor %}
             </div>
-            <div><strong>Étoiles :</strong>
-                <div class="numbers">
-                    {% for num in last_results.etoiles %}
-                    <div class="number etoile">{{ num }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
+            <p class="meta">Jackpot : {{ last_results.jackpot }} €</p>
+        </section>
         {% endif %}
 
-        <div class="grid-container">
-            <div class="card">
-                <h2>🧠 Prédictions LSTM</h2>
-                {% for grid in lstm_grids %}
-                <div class="prediction {% if grid.category != 'Pas de gain' %}win{% endif %}">
-                    <strong>Boules :</strong>
-                    <div class="numbers">
-                        {% for num in grid.boules %}
-                        <div class="number boule">{{ num }}</div>
-                        {% endfor %}
-                    </div>
-                    <strong>Étoiles :</strong>
-                    <div class="numbers">
-                        {% for num in grid.etoiles %}
-                        <div class="number etoile">{{ num }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="gain-info {% if grid.category != 'Pas de gain' %}win{% endif %}">
-                        {{ grid.match }} → {{ grid.category }} {{ grid.prize }}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="card">
-                <h2>🧬 Prédictions Génétiques</h2>
-                {% for grid in genetic_grids %}
-                <div class="prediction {% if grid.category != 'Pas de gain' %}win{% endif %}">
-                    <strong>Boules :</strong>
-                    <div class="numbers">
-                        {% for num in grid.boules %}
-                        <div class="number boule">{{ num }}</div>
-                        {% endfor %}
-                    </div>
-                    <strong>Étoiles :</strong>
-                    <div class="numbers">
-                        {% for num in grid.etoiles %}
-                        <div class="number etoile">{{ num }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="gain-info {% if grid.category != 'Pas de gain' %}win{% endif %}">
-                        {{ grid.match }} → {{ grid.category }} {{ grid.prize }}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="chart-container">
-            <h2 class="text-center">📊 Analyse des Fréquences</h2>
-            <img src="data:image/png;base64,{{ plot_url }}" alt="Graphique des fréquences" style="width:100%; max-width:800px;">
-        </div>
-
-        <div class="text-center">
-            <form action="{{ url_for('generate_predictions') }}" method="post">
-                <button type="submit" class="btn">🎰 Générer de nouvelles prédictions</button>
+        <div class="button-group">
+            <form action="/generate" method="POST" class="generate-form">
+                <button type="submit" class="animated delay-1">
+                    <i class="fas fa-bolt"></i> Générer des prédictions
+                </button>
             </form>
+            <a href="/premium" class="btn btn-premium animated delay-2">
+                <i class="fas fa-crown"></i> Devenir Premium
+            </a>
         </div>
 
-        {% if history %}
-        <div class="card">
-            <h2>🕰️ Historique récent</h2>
-            {% for item in history %}
-            <div class="history-item">
-                <div><strong>{{ item.date }}</strong></div>
-                <div class="numbers">
-                    {% for num in item.boules %}
-                    <div class="number boule">{{ num }}</div>
-                    {% endfor %}
-                    {% for num in item.etoiles %}
-                    <div class="number etoile">{{ num }}</div>
-                    {% endfor %}
+        <section class="premium-section animated delay-1">
+            <h3><i class="fas fa-crown"></i> Passez à la version Premium</h3>
+            <p>Débloquez des prédictions plus précises, des analyses avancées et des fonctionnalités exclusives</p>
+            
+            <div class="premium-features">
+                <div class="feature-card">
+                    <i class="fas fa-brain"></i>
+                    <h4>IA Avancée</h4>
+                    <p>Accès à nos modèles d'IA les plus performants</p>
                 </div>
-                {% if item.gain %}
-                <div class="gain-info {% if item.gain.category != 'Pas de gain' %}win{% endif %}">
-                    {{ item.gain.match }} → <strong>{{ item.gain.category }}</strong> {{ item.gain.prize }}
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Statistiques Détaillées</h4>
+                    <p>Analyses complètes des tendances et fréquences</p>
                 </div>
-                {% endif %}
+                <div class="feature-card">
+                    <i class="fas fa-gem"></i>
+                    <h4>Prédictions Illimitées</h4>
+                    <p>Générez autant de grilles que vous le souhaitez</p>
+                </div>
             </div>
-            {% endfor %}
-        </div>
+            
+            <a href="/premium" class="btn btn-premium">
+                <i class="fas fa-crown"></i> Voir les offres Premium
+            </a>
+        </section>
+
+        {% if lstm_grids or genetic_grids %}
+        <section class="predictions animated delay-2">
+            <h2><i class="fas fa-robot"></i> Prédictions IA</h2>
+            
+            <div class="grid-section">
+                <h3><i class="fas fa-network-wired"></i> Modèle LSTM</h3>
+                <div class="prediction-grid">
+                    {% for grid in lstm_grids %}
+                        <div class="prediction-card {% if loop.index <= 2 %}premium{% endif %}">
+                            {% if loop.index <= 2 %}<span class="premium-tag">Premium</span>{% endif %}
+                            <div class="numbers">
+                                {% for number in grid.boules %}<span class="ball">{{ number }}</span>{% endfor %}
+                                {% for star in grid.etoiles %}<span class="star">{{ star }}</span>{% endfor %}
+                            </div>
+                            <p class="gain">Gain potentiel : {{ grid.gain }} €</p>
+                            <p class="meta">Probabilité : {{ grid.probability }}%</p>
+                            {% if loop.index > 2 %}
+                            <a href="/premium" class="btn btn-premium" style="margin-top: 1rem; width: 100%;">
+                                <i class="fas fa-lock"></i> Débloquer Premium
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grid-section">
+                <h3><i class="fas fa-dna"></i> Optimisation Génétique</h3>
+                <div class="prediction-grid">
+                    {% for grid in genetic_grids %}
+                        <div class="prediction-card {% if loop.index <= 2 %}premium{% endif %}">
+                            {% if loop.index <= 2 %}<span class="premium-tag">Premium</span>{% endif %}
+                            <div class="numbers">
+                                {% for number in grid.boules %}<span class="ball">{{ number }}</span>{% endfor %}
+                                {% for star in grid.etoiles %}<span class="star">{{ star }}</span>{% endfor %}
+                            </div>
+                            <p class="gain">Gain potentiel : {{ grid.gain }} €</p>
+                            <p class="meta">Score génétique : {{ grid.score }}/100</p>
+                            {% if loop.index > 2 %}
+                            <a href="/premium" class="btn btn-premium" style="margin-top: 1rem; width: 100%;">
+                                <i class="fas fa-lock"></i> Débloquer Premium
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
         {% endif %}
-    </div>
+
+        <section class="stats animated delay-3">
+            <h2><i class="fas fa-chart-pie"></i> Fréquences des numéros</h2>
+            <img src="data:image/png;base64,{{ plot_url }}" alt="Fréquences des numéros" class="chart-img">
+            <p>Analysez les tendances pour faire des choix plus éclairés</p>
+            <a href="/stats" class="btn">
+                <i class="fas fa-chart-bar"></i> Voir toutes les statistiques
+            </a>
+        </section>
+
+        <section class="premium-section animated delay-3">
+            <h3>Nos offres Premium</h3>
+            <p>Choisissez la formule qui correspond à vos besoins</p>
+            
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <h4>Basique</h4>
+                    <div class="price">9,99€ <span>/mois</span></div>
+                    <ul style="text-align: left; margin: 1.5rem 0;">
+                        <li><i class="fas fa-check"></i> 10 prédictions/jour</li>
+                        <li><i class="fas fa-check"></i> Statistiques standard</li>
+                        <li><i class="fas fa-check"></i> 1 modèle d'IA</li>
+                    </ul>
+                    <a href="/subscribe?plan=basic" class="btn">Choisir</a>
+                </div>
+                
+                <div class="pricing-card popular">
+                    <span class="popular-badge">Populaire</span>
+                    <h4>Pro</h4>
+                    <div class="price">19,99€ <span>/mois</span></div>
+                    <ul style="text-align: left; margin: 1.5rem 0;">
+                        <li><i class="fas fa-check"></i> Prédictions illimitées</li>
+                        <li><i class="fas fa-check"></i> Analyses avancées</li>
+                        <li><i class="fas fa-check"></i> 3 modèles d'IA</li>
+                        <li><i class="fas fa-check"></i> Support prioritaire</li>
+                    </ul>
+                    <a href="/subscribe?plan=pro" class="btn btn-premium">Choisir</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h4>Annuel</h4>
+                    <div class="price">199€ <span>/an</span></div>
+                    <p style="font-size: 0.9rem; color: var(--accent-color);">Économisez 30%</p>
+                    <ul style="text-align: left; margin: 1.5rem 0;">
+                        <li><i class="fas fa-check"></i> Toutes les fonctionnalités Pro</li>
+                        <li><i class="fas fa-check"></i> Accès anticipé aux nouvelles features</li>
+                        <li><i class="fas fa-check"></i> Conseil personnalisé</li>
+                    </ul>
+                    <a href="/subscribe?plan=annual" class="btn btn-success">Choisir</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-column">
+                <h4>EuroPredictor Pro</h4>
+                <p>Utilisez la puissance de l'IA pour augmenter vos chances de gagner à l'EuroMillions.</p>
+            </div>
+            <div class="footer-column">
+                <h4>Liens utiles</h4>
+                <ul>
+                    <li><a href="/">Accueil</a></li>
+                    <li><a href="/stats">Statistiques</a></li>
+                    <li><a href="/compare">Comparer</a></li>
+                    <li><a href="/premium">Premium</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Légal</h4>
+                <ul>
+                    <li><a href="/terms">Conditions d'utilisation</a></li>
+                    <li><a href="/privacy">Politique de confidentialité</a></li>
+                    <li><a href="/cookies">Politique des cookies</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Contact</h4>
+                <ul>
+                    <li><a href="mailto:support@europredictor.com"><i class="fas fa-envelope"></i> support@europredictor.com</a></li>
+                    <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+                    <li><a href="#"><i class="fab fa-facebook"></i> Facebook</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 EuroMillions Predictor Pro. Tous droits réservés.</p>
+            <p>Ce site n'est pas affilié à la Française des Jeux ou à l'EuroMillions.</p>
+        </div>
+    </footer>
 </body>
 </html>

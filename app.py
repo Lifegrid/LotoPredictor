@@ -1,249 +1,198 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for
 import matplotlib.pyplot as plt
-import numpy as np
 import base64
 import io
-from datetime import datetime
-from pathlib import Path
-import random
-from collections import Counter
-import warnings
-import traceback
-import tensorflow as tf
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
+from collections import Counter
+import random
 import logging
-import requests
-from bs4 import BeautifulSoup
+import numpy as np
 
-# Configuration de base
+# Initialisation Flask
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-123')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Configuration du logging
+# Configuration logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Désactivation des warnings
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-# Configuration GPU
+# GPU TensorFlow
 try:
+    import tensorflow as tf
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
-except RuntimeError as e:
-    logger.error(f"Erreur configuration GPU: {e}")
+except Exception as e:
+    logger.error(f"Erreur configuration GPU : {e}")
 
-# Importations relatives
-try:
-    from ai.predictor import EuroMillionsPredictor
-    from ai.genetic import GeneticOptimizer
-    from services.fdj_scraper import FDJScraper
-    from services.history_manager import HistoryManager
+# Imports internes
+from games.euromillions.predictor import EuroMillionsPredictor
+from games.euromillions.genetic_optimizer import GeneticOptimizer
+from services.history_manager import HistoryManager
+from services.fdj_scraper import FDJScraper
+from services.result_checker import ResultChecker
 
-    predictor = EuroMillionsPredictor()
-    genetic_optimizer = GeneticOptimizer()
-except ImportError as e:
-    logger.error(f"Erreur importation modules: {e}")
-    raise
-
-# Planificateur pour les mises à jour automatiques
-scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(
-    func=predictor.retrain_model,
-    trigger='cron',
-    day_of_week='tue,fri',
-    hour=22,
-    misfire_grace_time=3600
-)
-scheduler.start()
+predictor = EuroMillionsPredictor()
+genetic_optimizer = GeneticOptimizer()
 
 def generate_frequency_plot(history=None):
     try:
+        if not history:
+            history = HistoryManager.load_history()
+            
         plt.switch_backend('Agg')
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-        if history and len(history) > 0:
-            all_numbers = []
-            all_stars = []
+        all_numbers = []
+        all_stars = []
+        for entry in history:
+            if isinstance(entry, dict):
+                if 'boules' in entry:
+                    all_numbers.extend(entry['boules'])
+                if 'etoiles' in entry:
+                    all_stars.extend(entry['etoiles'])
 
-            for entry in history:
-                if isinstance(entry, dict):
-                    boules = entry.get('boules') or entry.get('results', {}).get('boules', [])
-                    etoiles = entry.get('etoiles') or entry.get('results', {}).get('etoiles', [])
+        # Si pas assez de données, générer des données de démo
+        if not all_numbers:
+            all_numbers = random.choices(range(1, 51), k=100)
+        if not all_stars:
+            all_stars = random.choices(range(1, 13), k=40)
 
-                    if len(boules) == 5:
-                        all_numbers.extend([int(n) for n in boules if 1 <= n <= 50])
-                    if len(etoiles) == 2:
-                        all_stars.extend([int(n) for n in etoiles if 1 <= n <= 12])
+        num_counts = Counter(all_numbers)
+        star_counts = Counter(all_stars)
 
-            if all_numbers and all_stars:
-                num_counts = Counter(all_numbers)
-                nums, counts = zip(*sorted(num_counts.items()))
-                ax1.bar(nums, counts, color='#4e79a7')
-                ax1.set_title('Fréquence des numéros (1-50)')
-                ax1.set_xlabel('Numéro')
-                ax1.set_ylabel('Fréquence')
-                ax1.set_xticks(range(1, 51, 5))
-                ax1.grid(axis='y', linestyle='--', alpha=0.7)
+        nums, counts = zip(*sorted(num_counts.items()))
+        ax1.bar(nums, counts, color='#4e79a7')
+        ax1.set_title("Fréquences des boules (1-50)")
+        ax1.set_xlabel("Boules")
+        ax1.set_ylabel("Fréquence")
+        ax1.grid(True)
 
-                star_counts = Counter(all_stars)
-                stars, scounts = zip(*sorted(star_counts.items()))
-                ax2.bar(stars, scounts, color='#f28e2b')
-                ax2.set_title('Fréquence des étoiles (1-12)')
-                ax2.set_xlabel('Étoile')
-                ax2.set_ylabel('Fréquence')
-                ax2.set_xticks(range(1, 13))
-                ax2.grid(axis='y', linestyle='--', alpha=0.7)
+        stars, scounts = zip(*sorted(star_counts.items()))
+        ax2.bar(stars, scounts, color='#f28e2b')
+        ax2.set_title("Fréquences des étoiles (1-12)")
+        ax2.set_xlabel("Étoiles")
+        ax2.set_ylabel("Fréquence")
+        ax2.grid(True)
 
         plt.tight_layout()
-        img = io.BytesIO()
-        plt.savefig(img, format='png', bbox_inches='tight', dpi=100)
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png')
         plt.close()
-        return base64.b64encode(img.getvalue()).decode('utf-8')
+        return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
     except Exception as e:
-        logger.error(f"Erreur génération graphique: {e}\n{traceback.format_exc()}")
+        logger.error(f"Erreur génération graphique : {e}")
         return ""
 
+# Planification réentraînement
+scheduler = BackgroundScheduler(daemon=True)
+scheduler.start()
+
+# Route principale
 @app.route('/')
 def index():
     try:
-        full_history = HistoryManager.load_history() or []
-        stats = HistoryManager.get_stats() or {}
-        next_draw = FDJScraper.get_next_draw_date() or datetime.now()
+        history = HistoryManager.load_history()
+        stats = HistoryManager.get_stats()
+        
+        try:
+            next_draw = FDJScraper.get_next_draw_date()
+            next_draw_str = next_draw.strftime("%A %d %B %Y à %Hh%M")
+        except Exception as e:
+            logger.error(f"Erreur obtention date tirage : {e}")
+            next_draw_str = "Prochain tirage non disponible"
 
-        return render_template('index.html',
-                               history=full_history,
+        return render_template("index.html",
+                               history=history[-5:] if history else [],
                                stats=stats,
-                               next_draw=next_draw.strftime("%A %d %B %Y à %Hh%M"),
-                               plot_url=generate_frequency_plot(full_history))
+                               next_draw=next_draw_str,
+                               plot_url=generate_frequency_plot(history),
+                               datetime=datetime)
     except Exception as e:
-        logger.error(f"Erreur route / : {e}\n{traceback.format_exc()}")
-        return render_template('error.html', message="Erreur lors du chargement de la page"), 500
-
-def obtenir_resultats_euromillions():
-    url = "https://www.fdj.fr/jeux-de-tirage/euromillions-my-million/resultats"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        boules = [int(x.text) for x in soup.find_all("span", class_="ball-euromillions")]
-        etoiles = [int(x.text) for x in soup.find_all("span", class_="star-euromillions")]
-
-        return {"boules": boules[:5], "etoiles": etoiles[:2]}
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Erreur de requête HTTP : {e}")
-        return None
-    except ValueError as e:
-        logger.error(f"Erreur de conversion de données : {e}")
-        return None
-    except Exception as e:
-        logger.error(f"Une erreur inattendue s'est produite : {e}")
-        return None
-
-def convertir_historique(historique_actuel):
-    historique_correct = []
-    for entree in historique_actuel:
-        if 'results' in entree and 'boules' in entree['results'] and 'etoiles' in entree['results']:
-            historique_correct.append({
-                'boules': entree['results']['boules'],
-                'etoiles': entree['results']['etoiles']
-            })
-        elif 'boules' in entree and 'etoiles' in entree:
-            historique_correct.append({
-                'boules': entree['boules'],
-                'etoiles': entree['etoiles']
-            })
-    return historique_correct
+        logger.error(f"Erreur route / : {e}")
+        return render_template("error.html", message="Erreur lors du chargement de la page"), 500
 
 @app.route('/generate', methods=['POST'])
 def generate_predictions():
     try:
-        last_real_results = obtenir_resultats_euromillions()
-        if not last_real_results or not isinstance(last_real_results, dict):
-            logger.warning("Impossible de récupérer les derniers résultats réels, utilisation de données aléatoires.")
-            last_real_results = {
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "boules": sorted(random.sample(range(1, 51), 5)),
-                "etoiles": sorted(random.sample(range(1, 13), 2))
-            }
+        last_real_results = FDJScraper.get_last_results()
+        if not last_real_results:
+            history = HistoryManager.load_history()
+            if history:
+                last_real_results = history[-1]
+            else:
+                last_real_results = {
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "boules": sorted(random.sample(range(1, 51), 5)),
+                    "etoiles": sorted(random.sample(range(1, 13), 2))
+                }
 
-        full_history = HistoryManager.load_history() or []
-        historique_converti = convertir_historique(full_history)
-
+        history = HistoryManager.load_history()
         lstm_grids = []
         genetic_grids = []
 
         for _ in range(5):
-            lstm_pred = predictor.predict_next(historique_converti)
-            if lstm_pred and isinstance(lstm_pred, dict):
-                win_info = HistoryManager.calculate_win(lstm_pred, last_real_results)
-                win_info = {k: int(v) if isinstance(v, np.int64) else v for k, v in win_info.items()}
+            lstm_pred = predictor.predict_next(history)
+            if lstm_pred:
+                gain = HistoryManager.calculate_win(lstm_pred, last_real_results)
+                lstm_grids.append({**lstm_pred, **gain})
+
+            genetic_pred = genetic_optimizer.generate_optimized_grid(history)
+            if genetic_pred:
+                gain = HistoryManager.calculate_win(genetic_pred, last_real_results)
+                genetic_grids.append({**genetic_pred, **gain})
+
+        if not lstm_grids and not genetic_grids:
+            for _ in range(5):
                 lstm_grids.append({
-                    **lstm_pred,
-                    "type": "LSTM",
-                    **win_info
+                    "boules": sorted(random.sample(range(1, 51), 5)),
+                    "etoiles": sorted(random.sample(range(1, 13), 2)),
+                    "source": "random",
+                    "gain": "N/A"
                 })
-
-            genetic_pred = genetic_optimizer.generate_optimized_grid(historique_converti)
-            if genetic_pred and isinstance(genetic_pred, dict):
-                win_info = HistoryManager.calculate_win(genetic_pred, last_real_results)
-                win_info = {k: int(v) if isinstance(v, np.int64) else v for k, v in win_info.items()}
                 genetic_grids.append({
-                    **genetic_pred,
-                    "type": "Génétique",
-                    **win_info
+                    "boules": sorted(random.sample(range(1, 51), 5)),
+                    "etoiles": sorted(random.sample(range(1, 13), 2)),
+                    "source": "random",
+                    "gain": "N/A"
                 })
 
-        for grid in lstm_grids + genetic_grids:
-            if isinstance(grid, dict):
-                HistoryManager.save_prediction(grid, last_real_results)
-
-        return render_template('index.html',
+        return render_template("index.html",
+                               last_results=last_real_results,
                                lstm_grids=lstm_grids,
                                genetic_grids=genetic_grids,
-                               last_results=last_real_results,
-                               plot_url=generate_frequency_plot(full_history),
                                stats=HistoryManager.get_stats(),
-                               history=full_history)
-
+                               plot_url=generate_frequency_plot(history),
+                               datetime=datetime)
     except Exception as e:
-        logger.error(f"Erreur génération prédictions: {e}\n{traceback.format_exc()}")
-        return render_template('error.html', message="Erreur lors de la génération des prédictions"), 500
+        logger.error(f"Erreur /generate : {e}")
+        return render_template("error.html", message="Erreur lors de la génération des prédictions"), 500
 
-@app.route('/update')
-def update_data():
+@app.route('/compare')
+def compare_predictions():
     try:
-        new_data = FDJScraper.get_complete_history()
-        if new_data and isinstance(new_data, list) and predictor.retrain_model(new_data):
-            return redirect(url_for('index'))
-        raise Exception("Données d'entraînement invalides")
+        ResultChecker.compare_all()
+        return redirect(url_for('index'))
     except Exception as e:
-        logger.error(f"Erreur mise à jour: {e}\n{traceback.format_exc()}")
-        return render_template('error.html', message=f"Erreur lors de la mise à jour: {str(e)}"), 500
+        logger.error(f"Erreur /compare : {e}")
+        return render_template("error.html", message="Erreur lors de la comparaison des résultats"), 500
 
 @app.route('/stats')
 def stats():
     try:
-        history = HistoryManager.load_history() or []
-        hot_numbers = predictor.get_hot_numbers() if hasattr(predictor, 'get_hot_numbers') else None
-        cold_numbers = predictor.get_cold_numbers() if hasattr(predictor, 'get_cold_numbers') else None
-
-        return render_template('stats.html',
+        history = HistoryManager.load_history()
+        return render_template("stats.html",
                                plot_url=generate_frequency_plot(history),
-                               hot=hot_numbers or {'boules': [], 'etoiles': []},
-                               cold=cold_numbers or {'boules': [], 'etoiles': []},
                                stats=HistoryManager.get_stats())
     except Exception as e:
-        logger.error(f"Erreur stats: {e}\n{traceback.format_exc()}")
-        return render_template('error.html', message=f"Erreur statistiques: {str(e)}"), 500
+        logger.error(f"Erreur /stats : {e}")
+        return render_template("error.html", message="Erreur lors du chargement des statistiques"), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+# Lancement serveur
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)

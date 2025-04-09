@@ -1,74 +1,57 @@
-import tensorflow as tf
-from tensorflow.keras import layers, losses, Model
-from tensorflow.keras.optimizers import Adam
+import pandas as pd
 import numpy as np
-import joblib
-from pathlib import Path
-import keras.saving
+from sklearn.preprocessing import MinMaxScaler
+import tensorflow as tf
+import os
 
-# Configuration des chemins
-MODEL_DIR = Path("ai/models")
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_PATH = MODEL_DIR / "lstm_model.keras"
+# Chargement des données
+data_path = os.path.join("data", "euromillions_clean.csv")
+df = pd.read_csv(data_path)
 
-class LSTMNetwork(Model):
-    """Réseau LSTM personnalisé avec sérialisation"""
-    def __init__(self):
-        super().__init__()
-        self.lstm = layers.LSTM(128, return_sequences=False)
-        self.dropout = layers.Dropout(0.3)
-        self.dense1 = layers.Dense(64, activation='relu')
-        self.dense2 = layers.Dense(5)
+# Configuration
+sequence_length = 20
+features = ['boule_1', 'boule_2', 'boule_3', 'boule_4', 'boule_5', 'etoile_1', 'etoile_2']
+X, y = [], []
 
-    def call(self, inputs):
-        x = self.lstm(inputs)
-        x = self.dropout(x)
-        x = self.dense1(x)
-        return self.dense2(x)
+# Séquences
+for i in range(len(df) - sequence_length):
+    seq_x = df.iloc[i:i+sequence_length][features].values
+    seq_y = df.iloc[i+sequence_length][features].values
+    X.append(seq_x)
+    y.append(seq_y)
 
-    def get_config(self):
-        return {}  # Configuration de base car pas de paramètres custom
+X = np.array(X)
+y = np.array(y)
 
-    @classmethod
-    def from_config(cls, config):
-        return cls()
+# Normalisation
+scaler = MinMaxScaler()
+X_scaled = scaler.fit_transform(X.reshape(-1, 7)).reshape(X.shape)
+y_scaled = scaler.transform(y.reshape(-1, 7)).reshape(y.shape)
 
-def train_and_save_model(X_train, y_train):
-    """Entraîne et sauvegarde le modèle"""
-    # Création du modèle
-    model = LSTMNetwork()
-    model.compile(
-        optimizer=Adam(learning_rate=0.001),
-        loss=losses.MeanSquaredError(),
-        metrics=['mae']
-    )
+# Entrées séparées
+X_boules = X_scaled[:, :, :5]
+X_etoiles = X_scaled[:, :, 5:]
 
-    # Entraînement
-    history = model.fit(
-        X_train, y_train,
-        epochs=50,
-        batch_size=32,
-        validation_split=0.2
-    )
+# Modèle LSTM
+input_boules = tf.keras.Input(shape=(sequence_length, 5), name='boules_input')
+input_etoiles = tf.keras.Input(shape=(sequence_length, 2), name='etoiles_input')
 
-    # Sauvegarde
-    model.save(MODEL_PATH)
-    print(f"Modèle sauvegardé dans {MODEL_PATH}")
-    return history
+x1 = tf.keras.layers.LSTM(64)(input_boules)
+x2 = tf.keras.layers.LSTM(32)(input_etoiles)
 
-def load_training_data():
-    """Charge les données d'entraînement (à adapter)"""
-    # Exemple avec des données aléatoires
-    return (
-        np.random.rand(100, 10, 5),  # X_train: 100 séquences de 10 tirages
-        np.random.rand(100, 5)       # y_train: 100 prédictions
-    )
+merged = tf.keras.layers.concatenate([x1, x2])
+dense = tf.keras.layers.Dense(64, activation='relu')(merged)
 
-if __name__ == '__main__':
-    print("Chargement des données...")
-    X_train, y_train = load_training_data()
-    
-    print("Début de l'entraînement...")
-    history = train_and_save_model(X_train, y_train)
-    
-    print("Entraînement terminé avec succès!")
+# 🔧 Sortie corrigée : 7 neurones pour 5 boules + 2 étoiles
+output = tf.keras.layers.Dense(7, activation='sigmoid')(dense)
+
+model = tf.keras.Model(inputs=[input_boules, input_etoiles], outputs=output)
+model.compile(optimizer='adam', loss='mse')
+model.summary()
+
+# Entraînement
+model.fit([X_boules, X_etoiles], y_scaled, epochs=50, batch_size=16, verbose=1)
+
+# Sauvegarde
+os.makedirs("ai/models", exist_ok=True)
+model.save("ai/models/euromillions_model.keras")

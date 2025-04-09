@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Comparaison des Prédictions</title>
+</head>
+<body>
+    <h1>Comparaison des Prédictions avec les Résultats Officiels</h1>
+    {% for entry in report %}
+        <div style="margin-bottom: 20px;">
+            <strong>Date :</strong> {{ entry.date }}<br>
+            <strong>Prédiction :</strong> {{ entry.prediction.boules }} + {{ entry.prediction.etoiles }}<br>
+            <strong>Résultat :</strong> {{ entry.result.boules }} + {{ entry.result.etoiles }}<br>
+            <strong>Gain :</strong> {{ entry.match }} → {{ entry.category }} {{ entry.prize }}
+        </div>
+    {% endfor %}
+</body>
+</html>
